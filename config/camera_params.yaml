@@ -1,0 +1,14 @@
+camera_params:
+  width: 640
+  height: 480
+  fps: 30
+  depth_enabled: true
+  color_enabled: true
+  ir_enabled: false
+  exposure: 100
+  gain: 16
+  enable_auto_exposure: true
+  enable_auto_white_balance: true
+  enable_color_correction: true
+  enable_hardware_sync: false
+  serial_number: "YOUR_CAMERA_SERIAL_NUMBER"

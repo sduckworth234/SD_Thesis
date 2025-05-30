@@ -1,0 +1,59 @@
+# Core Dependencies
+numpy>=1.21.0
+opencv-python>=4.5.0
+pillow>=8.0.0
+matplotlib>=3.3.0
+scipy>=1.7.0
+
+# Intel RealSense
+pyrealsense2>=2.50.0
+
+# Deep Learning Frameworks
+torch>=1.9.0
+torchvision>=0.10.0
+tensorflow>=2.6.0
+
+# Computer Vision
+scikit-image>=0.18.0
+imutils>=0.5.4
+
+# ROS Dependencies (install via rosdep)
+# ros-noetic-ros-base
+# ros-noetic-vision-msgs
+# ros-noetic-image-transport
+# ros-noetic-cv-bridge
+# ros-noetic-sensor-msgs
+# ros-noetic-geometry-msgs
+# ros-noetic-nav-msgs
+
+# YOLO Dependencies
+ultralytics>=8.0.0
+seaborn>=0.11.0
+
+# Low-light Enhancement Models
+kornia>=0.6.0
+
+# Utilities
+pyyaml>=5.4.0
+tqdm>=4.62.0
+argparse
+pathlib
+loguru>=0.5.0
+
+# Jupyter and Development
+jupyter>=1.0.0
+ipykernel>=6.0.0
+pytest>=6.0.0
+
+# Visualization
+plotly>=5.0.0
+wandb>=0.12.0
+
+# SLAM Dependencies
+evo>=1.12.0  # For trajectory evaluation
+orbslam2
+yolov4
+zero-dce
+sci
+pytest
+pytest-cov

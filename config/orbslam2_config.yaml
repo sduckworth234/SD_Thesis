@@ -1,0 +1,21 @@
+camera:
+  width: 640
+  height: 480
+  fps: 30
+  device: "/dev/video0"
+  
+orbslam2:
+  vocabulary_file: "path/to/ORBvoc.txt"
+  settings_file: "path/to/Settings.yaml"
+  use_viewer: true
+  tracking:
+    tracking_frame: "world"
+    max_keyframes: 1000
+    min_keyframe_distance: 0.1
+  mapping:
+    map_resolution: 0.05
+    max_map_points: 10000
+  loop_closing:
+    enable_loop_closing: true
+    loop_closing_distance: 10.0
+    loop_closing_keyframes: 5

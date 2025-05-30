@@ -1,0 +1,13 @@
+<launch>
+  <node name="camera_node" pkg="your_package_name" type="camera_node.py" output="screen">
+    <param name="camera_params" value="$(find your_package_name)/config/camera_params.yaml"/>
+  </node>
+
+  <node name="detection_node" pkg="your_package_name" type="detection_node.py" output="screen">
+    <param name="yolo_config" value="$(find your_package_name)/config/yolo_config.yaml"/>
+  </node>
+
+  <node name="slam_node" pkg="your_package_name" type="slam_node.py" output="screen">
+    <param name="orbslam2_config" value="$(find your_package_name)/config/orbslam2_config.yaml"/>
+  </node>
+</launch>

@@ -1,0 +1,5 @@
+<launch>
+  <node pkg="ros_nodes" type="camera_node.py" name="camera_node" output="screen" />
+  <node pkg="ros_nodes" type="detection_node.py" name="detection_node" output="screen" />
+  <node pkg="ros_nodes" type="slam_node.py" name="slam_node" output="screen" />
+</launch>
