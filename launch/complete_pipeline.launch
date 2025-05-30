@@ -1,0 +1,146 @@
+<?xml version="1.0"?>
+<launch>
+  <!-- Complete Pipeline Launch File -->
+  <!-- Integrates camera, SLAM, YOLO detection, and low-light enhancement -->
+  
+  <arg name="camera" default="camera" />
+  <arg name="namespace" default="sd_thesis" />
+  
+  <!-- Pipeline Configuration -->
+  <arg name="enable_enhancement" default="true" />
+  <arg name="enable_detection" default="true" />
+  <arg name="enable_slam" default="true" />
+  <arg name="enhancement_method" default="zero_dce" /> <!-- zero_dce, sci, traditional -->
+  
+  <!-- Recording -->
+  <arg name="record_data" default="false" />
+  <arg name="bag_file" default="$(find sd_thesis)/data/recordings/$(anon pipeline_test)" />
+  
+  <!-- Visualization -->
+  <arg name="rviz" default="true" />
+  <arg name="debug_view" default="false" />
+  
+  <!-- Camera Launch -->
+  <include file="$(find sd_thesis)/launch/test_camera.launch">
+    <arg name="camera" value="$(arg camera)" />
+    <arg name="rviz" value="false" />
+    <arg name="image_view" value="false" />
+  </include>
+    <!-- Low-Light Enhancement Node -->
+  <group if="$(arg enable_enhancement)" ns="$(arg namespace)">
+    <node name="enhancement_node" pkg="sd_thesis" type="enhancement_node.py" output="screen">
+      <param name="enhancement_method" value="$(arg enhancement_method)" />
+      <param name="input_topic" value="/$(arg camera)/color/image_raw" />
+      <param name="output_topic" value="/$(arg namespace)/enhanced/image_raw" />
+      <param name="publish_comparison" value="$(arg debug_view)" />
+      
+      <!-- Model parameters -->
+      <param name="zero_dce_model_path" value="$(find sd_thesis)/models/zero_dce/zero_dce_plus.pth" />
+      <param name="sci_model_path" value="$(find sd_thesis)/models/sci/sci_model.pth" />
+    </node>
+  </group>
+    <!-- YOLO Person Detection Node -->
+  <group if="$(arg enable_detection)" ns="$(arg namespace)">
+    <node name="detection_node" pkg="sd_thesis" type="detection_node.py" output="screen">
+      <!-- Use enhanced image if enhancement is enabled, otherwise raw -->
+      <param name="input_topic" value="/$(arg namespace)/enhanced/image_raw" if="$(arg enable_enhancement)" />
+      <param name="input_topic" value="/$(arg camera)/color/image_raw" unless="$(arg enable_enhancement)" />
+      
+      <param name="detection_topic" value="/$(arg namespace)/detections" />
+      <param name="annotated_image_topic" value="/$(arg namespace)/detection/image_annotated" />
+      
+      <!-- YOLO configuration -->
+      <param name="yolo_config" value="$(find sd_thesis)/models/yolo/yolov4.cfg" />
+      <param name="yolo_weights" value="$(find sd_thesis)/models/yolo/yolov4.weights" />
+      <param name="yolo_names" value="$(find sd_thesis)/models/yolo/coco.names" />
+      <param name="confidence_threshold" value="0.5" />
+      <param name="nms_threshold" value="0.4" />
+    </node>
+  </group>
+    <!-- ORB-SLAM2 Node -->
+  <group if="$(arg enable_slam)" ns="$(arg namespace)">
+    <node name="slam_node" pkg="sd_thesis" type="slam_node.py" output="screen">
+      <param name="vocab_path" value="$(find sd_thesis)/models/orb_slam2/ORBvoc.txt" />
+      <param name="settings_path" value="$(find sd_thesis)/config/orbslam2_config.yaml" />
+      
+      <!-- Use enhanced image if enhancement is enabled, otherwise raw -->
+      <param name="color_topic" value="/$(arg namespace)/enhanced/image_raw" if="$(arg enable_enhancement)" />
+      <param name="color_topic" value="/$(arg camera)/color/image_raw" unless="$(arg enable_enhancement)" />
+      
+      <param name="depth_topic" value="/$(arg camera)/depth/image_rect_raw" />
+      <param name="camera_info_topic" value="/$(arg camera)/color/camera_info" />
+      
+      <!-- Output topics -->
+      <param name="pose_topic" value="/$(arg namespace)/slam/pose" />
+      <param name="trajectory_topic" value="/$(arg namespace)/slam/trajectory" />
+      <param name="map_points_topic" value="/$(arg namespace)/slam/map_points" />
+    </node>
+  </group>
+  
+  <!-- Pipeline Coordinator Node -->
+  <group ns="$(arg namespace)">
+    <node name="pipeline_coordinator" pkg="sd_thesis" type="pipeline_coordinator.py" output="screen">
+      <param name="camera_topic" value="/$(arg camera)/color/image_raw" />
+      <param name="depth_topic" value="/$(arg camera)/depth/image_rect_raw" />
+      <param name="detection_topic" value="/$(arg namespace)/detections" />
+      <param name="pose_topic" value="/orb_slam2_rgbd/pose" />
+      
+      <!-- Performance monitoring -->
+      <param name="publish_performance_stats" value="true" />
+      <param name="performance_topic" value="/$(arg namespace)/performance" />
+      
+      <!-- Data logging -->
+      <param name="log_detections" value="true" />
+      <param name="log_trajectory" value="true" />
+      <param name="log_directory" value="$(find sd_thesis)/logs" />
+    </node>
+  </group>
+  
+  <!-- Mission Control Node (for search patterns, waypoints, etc.) -->
+  <group ns="$(arg namespace)">
+    <node name="mission_control" pkg="sd_thesis" type="mission_control.py" output="screen">
+      <param name="detection_topic" value="/$(arg namespace)/detections" />
+      <param name="pose_topic" value="/orb_slam2_rgbd/pose" />
+      <param name="mission_config" value="$(find sd_thesis)/config/missions/search_pattern.yaml" />
+    </node>
+  </group>
+  
+  <!-- Data Recording -->
+  <group if="$(arg record_data)">
+    <node name="rosbag_record" pkg="rosbag" type="record" output="screen"
+          args="record -O $(arg bag_file) 
+                /$(arg camera)/color/image_raw
+                /$(arg camera)/depth/image_rect_raw
+                /$(arg camera)/color/camera_info
+                /$(arg namespace)/enhanced/image_raw
+                /$(arg namespace)/detections
+                /$(arg namespace)/detection/image_annotated
+                /orb_slam2_rgbd/pose
+                /$(arg namespace)/performance
+                /tf /tf_static" />
+  </group>
+  
+  <!-- RViz Visualization -->
+  <group if="$(arg rviz)">
+    <node name="rviz" pkg="rviz" type="rviz" args="-d $(find sd_thesis)/config/complete_pipeline.rviz" />
+  </group>
+  
+  <!-- Debug Image View -->
+  <group if="$(arg debug_view)">
+    <node name="enhanced_view" pkg="image_view" type="image_view" >
+      <remap from="image" to="/$(arg namespace)/enhanced/image_raw" />
+    </node>
+    <node name="detection_view" pkg="image_view" type="image_view" >
+      <remap from="image" to="/$(arg namespace)/detection/image_annotated" />
+    </node>
+  </group>
+  
+  <!-- Static transforms -->
+  <node pkg="tf2_ros" type="static_transform_publisher" name="world_to_camera"
+        args="0 0 0 0 0 0 world $(arg camera)_link" />
+  
+  <!-- Dynamic reconfigure for runtime parameter adjustment -->
+  <node name="rqt_reconfigure" pkg="rqt_reconfigure" type="rqt_reconfigure" 
+        if="$(arg debug_view)" />
+  
+</launch>

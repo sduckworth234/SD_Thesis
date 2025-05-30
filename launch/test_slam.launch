@@ -1,0 +1,72 @@
+<?xml version="1.0"?>
+<launch>
+  <!-- ORB-SLAM2 Test Launch File -->
+  
+  <arg name="camera" default="camera" />
+  <arg name="camera_type" default="rgbd" /> <!-- mono, stereo, rgbd -->
+  
+  <!-- ORB-SLAM2 Parameters -->
+  <arg name="voc_file" default="$(find sd_thesis)/models/orb_slam2/ORBvoc.txt" />
+  <arg name="settings_file" default="$(find sd_thesis)/config/orb_slam2/realsense_d435i.yaml" />
+  
+  <!-- Camera topics -->
+  <arg name="rgb_topic" default="/$(arg camera)/color/image_raw" />
+  <arg name="depth_topic" default="/$(arg camera)/depth/image_rect_raw" />
+  <arg name="camera_info_topic" default="/$(arg camera)/color/camera_info" />
+  
+  <!-- Start camera if requested -->
+  <arg name="start_camera" default="true" />
+  <group if="$(arg start_camera)">
+    <include file="$(find sd_thesis)/launch/test_camera.launch">
+      <arg name="camera" value="$(arg camera)" />
+      <arg name="rviz" value="false" />
+      <arg name="image_view" value="false" />
+    </include>
+  </group>
+  
+  <!-- ORB-SLAM2 RGBD Node -->
+  <group if="$(eval camera_type == 'rgbd')">
+    <node name="orb_slam2_rgbd" pkg="orb_slam2_ros" type="rgbd" output="screen">
+      <param name="voc_file" value="$(arg voc_file)" />
+      <param name="settings_file" value="$(arg settings_file)" />
+      
+      <remap from="/camera/rgb/image_raw" to="$(arg rgb_topic)" />
+      <remap from="/camera/depth_registered/image_raw" to="$(arg depth_topic)" />
+      <remap from="/camera/rgb/camera_info" to="$(arg camera_info_topic)" />
+    </node>
+  </group>
+  
+  <!-- ORB-SLAM2 Monocular Node -->
+  <group if="$(eval camera_type == 'mono')">
+    <node name="orb_slam2_mono" pkg="orb_slam2_ros" type="mono" output="screen">
+      <param name="voc_file" value="$(arg voc_file)" />
+      <param name="settings_file" value="$(arg settings_file)" />
+      
+      <remap from="/camera/image_raw" to="$(arg rgb_topic)" />
+    </node>
+  </group>
+  
+  <!-- SLAM Test Node -->
+  <node name="slam_test" pkg="sd_thesis" type="test_slam.py" output="screen">
+    <param name="camera_type" value="$(arg camera_type)" />
+  </node>
+  
+  <!-- Optional: RViz for SLAM visualization -->
+  <arg name="rviz" default="true" />
+  <group if="$(arg rviz)">
+    <node name="rviz" pkg="rviz" type="rviz" args="-d $(find sd_thesis)/config/slam_test.rviz" />
+  </group>
+  
+  <!-- TF Static transforms for camera -->
+  <node pkg="tf2_ros" type="static_transform_publisher" name="camera_base_link"
+        args="0 0 0 0 0 0 base_link $(arg camera)_link" />
+  
+  <!-- Optional: Save trajectory -->
+  <arg name="save_trajectory" default="false" />
+  <group if="$(arg save_trajectory)">
+    <node name="trajectory_saver" pkg="sd_thesis" type="save_trajectory.py" output="screen">
+      <param name="output_file" value="$(find sd_thesis)/data/trajectories/test_trajectory.txt" />
+    </node>
+  </group>
+  
+</launch>
