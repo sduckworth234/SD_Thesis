@@ -33,28 +33,37 @@ class CameraNode:
         self.fps = rospy.get_param('~fps', 30)
         self.enable_depth = rospy.get_param('~enable_depth', True)
         self.enable_pointcloud = rospy.get_param('~enable_pointcloud', False)
+        self.mock_mode = rospy.get_param('~mock_mode', False)
         
-        # Initialize RealSense pipeline
-        self.pipeline = rs.pipeline()
-        self.config = rs.config()
-        
-        # Configure color stream
-        self.config.enable_stream(rs.stream.color, self.width, self.height, rs.format.bgr8, self.fps)
-        
-        if self.enable_depth:
-            # Configure depth stream
-            self.config.enable_stream(rs.stream.depth, self.width, self.height, rs.format.z16, self.fps)
-        
-        # Start pipeline
-        try:
-            self.profile = self.pipeline.start(self.config)
-            rospy.loginfo("RealSense camera initialized successfully")
-        except Exception as e:
-            rospy.logerr(f"Failed to initialize RealSense camera: {e}")
-            self.use_webcam_fallback()
+        if self.mock_mode:
+            rospy.loginfo("Camera node running in mock mode")
+            self.pipeline = None
+        if self.mock_mode:
+            rospy.loginfo("Camera node running in mock mode")
+            self.pipeline = None
+            self.profile = None
+        else:
+            # Initialize RealSense pipeline
+            self.pipeline = rs.pipeline()
+            self.config = rs.config()
             
+            # Configure color stream
+            self.config.enable_stream(rs.stream.color, self.width, self.height, rs.format.bgr8, self.fps)
+            
+            if self.enable_depth:
+                # Configure depth stream
+                self.config.enable_stream(rs.stream.depth, self.width, self.height, rs.format.z16, self.fps)
+            
+            # Start pipeline
+            try:
+                self.profile = self.pipeline.start(self.config)
+                rospy.loginfo("RealSense camera initialized successfully")
+            except Exception as e:
+                rospy.logerr(f"Failed to initialize RealSense camera: {e}")
+                self.use_webcam_fallback()
+                
         # Get camera intrinsics
-        if hasattr(self, 'profile'):
+        if hasattr(self, 'profile') and self.profile:
             self.setup_camera_info()
         
         # Point cloud processing (if enabled)
@@ -133,7 +142,10 @@ class CameraNode:
         
         while not rospy.is_shutdown():
             try:
-                if hasattr(self, 'profile') and self.profile:
+                if self.mock_mode:
+                    # Generate mock images
+                    self.process_mock_frame()
+                elif hasattr(self, 'profile') and self.profile:
                     # RealSense camera
                     self.process_realsense_frame()
                 else:
@@ -151,6 +163,72 @@ class CameraNode:
                 rospy.logerr(f"Camera error: {e}")
                 
             rate.sleep()
+    
+    def process_mock_frame(self):
+        """Generate mock camera frames for testing"""
+        # Create mock color image with moving pattern
+        mock_color = np.zeros((self.height, self.width, 3), dtype=np.uint8)
+        
+        # Add time-varying pattern
+        t = time.time()
+        center_x = int(self.width/2 + 100 * np.sin(t))
+        center_y = int(self.height/2 + 50 * np.cos(t))
+        
+        cv2.circle(mock_color, (center_x, center_y), 50, (0, 255, 0), -1)
+        cv2.putText(mock_color, f"Mock Camera - Frame {self.frame_count}", 
+                   (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2)
+        
+        # Create mock depth image
+        mock_depth = np.full((self.height, self.width), 1000, dtype=np.uint16)
+        
+        # Add some depth variation
+        for i in range(self.height):
+            for j in range(self.width):
+                dist = np.sqrt((i - center_y)**2 + (j - center_x)**2)
+                mock_depth[i, j] = int(800 + 200 * np.sin(dist / 20))
+        
+        # Convert to ROS messages
+        now = rospy.Time.now()
+        
+        color_msg = self.bridge.cv2_to_imgmsg(mock_color, "bgr8")
+        color_msg.header.stamp = now
+        color_msg.header.frame_id = "camera_color_optical_frame"
+        
+        depth_msg = self.bridge.cv2_to_imgmsg(mock_depth, "16UC1")
+        depth_msg.header.stamp = now
+        depth_msg.header.frame_id = "camera_depth_optical_frame"
+        
+        # Publish images
+        self.color_pub.publish(color_msg)
+        if self.enable_depth:
+            self.depth_pub.publish(depth_msg)
+        
+        # Publish camera info
+        color_info = self.create_mock_camera_info()
+        color_info.header.stamp = now
+        color_info.header.frame_id = "camera_color_optical_frame"
+        self.color_info_pub.publish(color_info)
+        
+        if self.enable_depth:
+            depth_info = self.create_mock_camera_info()
+            depth_info.header.stamp = now
+            depth_info.header.frame_id = "camera_depth_optical_frame"
+            self.depth_info_pub.publish(depth_info)
+    
+    def create_mock_camera_info(self):
+        """Create mock camera info"""
+        info = CameraInfo()
+        info.width = self.width
+        info.height = self.height
+        info.distortion_model = "plumb_bob"
+        # Mock camera intrinsics
+        fx = fy = 600.0
+        cx = self.width / 2.0
+        cy = self.height / 2.0
+        info.K = [fx, 0, cx, 0, fy, cy, 0, 0, 1]
+        info.P = [fx, 0, cx, 0, 0, fy, cy, 0, 0, 0, 1, 0]
+        info.D = [0, 0, 0, 0, 0]
+        return info
     
     def process_realsense_frame(self):
         """Process frame from RealSense camera"""

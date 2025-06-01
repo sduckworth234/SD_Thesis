@@ -51,9 +51,8 @@ wandb>=0.12.0
 
 # SLAM Dependencies
 evo>=1.12.0  # For trajectory evaluation
-orbslam2
-yolov4
-zero-dce
-sci
-pytest
-pytest-cov
+# Note: ORB-SLAM3 is compiled from source, not pip installed
+# YOLO v4 is handled through ultralytics package above
+# Enhancement models are implemented in src/enhancement/
+pytest>=6.0.0
+pytest-cov>=2.12.0

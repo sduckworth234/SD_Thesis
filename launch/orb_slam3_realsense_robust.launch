@@ -1,0 +1,95 @@
+<launch>
+  <!-- ORB-SLAM3 with RealSense D435i - Robust Configuration -->
+  
+  <!-- Parameters -->
+  <arg name="camera_namespace" default="camera" />
+  <arg name="enable_pointcloud" default="false" />
+  <arg name="rviz" default="true" />
+  <arg name="use_cpp_node" default="true" />
+  
+  <!-- RealSense Camera Launch with robust settings -->
+  <group ns="$(arg camera_namespace)">
+    <include file="$(find realsense2_camera)/launch/rs_camera.launch">
+      <!-- Basic settings optimized for stability -->
+      <arg name="align_depth" value="true"/>
+      <arg name="enable_color" value="true"/>
+      <arg name="enable_depth" value="true"/>
+      <arg name="enable_infra1" value="false"/>
+      <arg name="enable_infra2" value="false"/>
+      <arg name="enable_fisheye" value="false"/>
+      <arg name="enable_gyro" value="false"/>
+      <arg name="enable_accel" value="false"/>
+      <arg name="enable_pose" value="false"/>
+      
+      <!-- Camera resolution and FPS -->
+      <arg name="color_width" value="640"/>
+      <arg name="color_height" value="480"/>
+      <arg name="depth_width" value="640"/>
+      <arg name="depth_height" value="480"/>
+      <arg name="color_fps" value="30"/>
+      <arg name="depth_fps" value="30"/>
+      
+      <!-- Disable pointcloud to reduce bandwidth -->
+      <arg name="enable_pointcloud" value="$(arg enable_pointcloud)"/>
+      
+      <!-- Robust USB settings -->
+      <arg name="reconnect_timeout" value="6.0"/>
+      <arg name="wait_for_device_timeout" value="5.0"/>
+      
+      <!-- Disable hardware reset and power management -->
+      <arg name="initial_reset" value="false"/>
+      <arg name="enable_sync" value="true"/>
+      
+      <!-- Reduce processing load -->
+      <arg name="clip_distance" value="4.0"/>
+      <arg name="linear_accel_cov" value="0.01"/>
+      <arg name="unite_imu_method" value="none"/>
+    </include>
+  </group>
+  
+  <!-- Static TF - Camera to base link -->
+  <node pkg="tf2_ros" type="static_transform_publisher" name="camera_base_link" 
+        args="0 0 0 0 0 0 base_link camera_link" />
+  
+  <!-- Static TF - Map to odom -->
+  <node pkg="tf2_ros" type="static_transform_publisher" name="map_to_odom" 
+        args="0 0 0 0 0 0 map odom" />
+  
+  <!-- ORB-SLAM3 Node - C++ version -->
+  <group if="$(arg use_cpp_node)">
+    <node name="orb_slam3_node" pkg="sd_thesis" type="run_orb_slam3.sh" output="screen" respawn="true" launch-prefix="bash -c">
+      <param name="vocabulary_file" value="/opt/ORB_SLAM3/Vocabulary/ORBvoc.txt" />
+      <param name="settings_file" value="$(find sd_thesis)/config/orbslam3_realsense.yaml" />
+      <param name="orb_slam3_path" value="/opt/ORB_SLAM3" />
+      
+      <!-- Camera topic remapping -->
+      <remap from="/camera/color/image_raw" to="/$(arg camera_namespace)/color/image_raw"/>
+      <remap from="/camera/depth/image_rect_raw" to="/$(arg camera_namespace)/aligned_depth_to_color/image_raw"/>
+      
+      <!-- Processing parameters -->
+      <param name="processing_rate" value="30.0"/>
+      <param name="max_queue_size" value="5"/>
+    </node>
+  </group>
+  
+  <!-- ORB-SLAM3 Node - Python version (fallback) -->
+  <group unless="$(arg use_cpp_node)">
+    <node name="orb_slam3_node" pkg="sd_thesis" type="orb_slam3_node.py" output="screen" respawn="false">
+      <param name="vocabulary_path" value="/opt/ORB_SLAM3/Vocabulary/ORBvoc.txt" />
+      <param name="config_path" value="$(find sd_thesis)/config/orbslam3_realsense.yaml" />
+      <param name="orb_slam3_path" value="/opt/ORB_SLAM3" />
+      
+      <!-- Camera topic remapping -->
+      <remap from="/camera/color/image_raw" to="/$(arg camera_namespace)/color/image_raw"/>
+      <remap from="/camera/depth/image_rect_raw" to="/$(arg camera_namespace)/aligned_depth_to_color/image_raw"/>
+    </node>
+  </group>
+  
+  <!-- RViz Visualization -->
+  <group if="$(arg rviz)">
+    <node name="rviz" pkg="rviz" type="rviz" 
+          args="-d $(find sd_thesis)/config/orb_slam3_visualization.rviz" 
+          output="screen" />
+  </group>
+  
+</launch>

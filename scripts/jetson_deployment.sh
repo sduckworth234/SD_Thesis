@@ -306,10 +306,10 @@ create_jetson_launch_files() {
         <remap from="detections" to="/detections"/>
     </node>
     
-    <!-- ORB-SLAM2 Node with reduced features for performance -->
+    <!-- ORB-SLAM3 Node with reduced features for performance -->
     <node name="slam_node" pkg="sd_thesis" type="slam_node.py" output="screen">
-        <param name="vocab_path" value="$(find sd_thesis)/config/ORBvoc.txt"/>
-        <param name="config_path" value="$(find sd_thesis)/config/jetson_camera.yaml"/>
+        <param name="vocab_path" value="$(find sd_thesis)/models/orbslam3/ORBvoc.txt"/>
+        <param name="settings_path" value="$(find sd_thesis)/config/orbslam3_jetson.yaml"/>
         <param name="num_features" value="500"/>
         <param name="scale_factor" value="1.2"/>
         <param name="num_levels" value="6"/>

@@ -315,14 +315,16 @@ pip3 install \
     einops
 ```
 
-### Step 7: Install ORB-SLAM2
+### Step 7: Install ORB-SLAM3
 
 ```bash
-# Install ORB-SLAM2 dependencies
+# Install ORB-SLAM3 dependencies
 sudo apt install -y \
     libglew-dev \
     libeigen3-dev \
-    libsuitesparse-dev
+    libsuitesparse-dev \
+    libyaml-cpp-dev \
+    libboost-all-dev
 
 # Install Pangolin (visualization library)
 cd ~/
@@ -333,35 +335,21 @@ cmake ..
 make -j$(nproc)
 sudo make install
 
-# Install ORB-SLAM2
-cd ~/
-git clone https://github.com/raulmur/ORB_SLAM2.git
-cd ORB_SLAM2
+# Install ORB-SLAM3 using our automated script
+cd ~/SD_Thesis
+chmod +x scripts/install_orbslam3.sh
+./scripts/install_orbslam3.sh
 
-# Build DBoW2
-cd Thirdparty/DBoW2
-mkdir build && cd build
-cmake .. -DCMAKE_BUILD_TYPE=Release
-make -j$(nproc)
+# The script will:
+# - Install all dependencies
+# - Compile ORB-SLAM3 from source
+# - Create Python wrapper
+# - Setup configuration files
+# - Add environment variables
 
-# Build g2o
-cd ../../g2o
-mkdir build && cd build
-cmake .. -DCMAKE_BUILD_TYPE=Release
-make -j$(nproc)
-
-# Build ORB-SLAM2
-cd ../../..
-chmod +x build.sh
-./build.sh
-
-# Build ROS package
-chmod +x build_ros.sh
-./build_ros.sh
-
-# Add ORB-SLAM2 to environment
-echo "export ORB_SLAM2_ROOT_PATH=~/ORB_SLAM2" >> ~/.bashrc
+# Manual verification
 source ~/.bashrc
+ls /opt/ORB_SLAM3
 ```
 
 ### Step 8: Install YOLO v4

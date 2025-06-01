@@ -1,13 +1,13 @@
 <?xml version="1.0"?>
 <launch>
-  <!-- ORB-SLAM2 Test Launch File -->
+  <!-- ORB-SLAM3 Test Launch File -->
   
   <arg name="camera" default="camera" />
   <arg name="camera_type" default="rgbd" /> <!-- mono, stereo, rgbd -->
   
-  <!-- ORB-SLAM2 Parameters -->
-  <arg name="voc_file" default="$(find sd_thesis)/models/orb_slam2/ORBvoc.txt" />
-  <arg name="settings_file" default="$(find sd_thesis)/config/orb_slam2/realsense_d435i.yaml" />
+  <!-- ORB-SLAM3 Parameters -->
+  <arg name="voc_file" default="/opt/ORB_SLAM3/Vocabulary/ORBvoc.txt" />
+  <arg name="settings_file" default="$(find sd_thesis)/config/orbslam3_realsense.yaml" />
   
   <!-- Camera topics -->
   <arg name="rgb_topic" default="/$(arg camera)/color/image_raw" />
@@ -24,27 +24,16 @@
     </include>
   </group>
   
-  <!-- ORB-SLAM2 RGBD Node -->
-  <group if="$(eval camera_type == 'rgbd')">
-    <node name="orb_slam2_rgbd" pkg="orb_slam2_ros" type="rgbd" output="screen">
-      <param name="voc_file" value="$(arg voc_file)" />
-      <param name="settings_file" value="$(arg settings_file)" />
-      
-      <remap from="/camera/rgb/image_raw" to="$(arg rgb_topic)" />
-      <remap from="/camera/depth_registered/image_raw" to="$(arg depth_topic)" />
-      <remap from="/camera/rgb/camera_info" to="$(arg camera_info_topic)" />
-    </node>
-  </group>
-  
-  <!-- ORB-SLAM2 Monocular Node -->
-  <group if="$(eval camera_type == 'mono')">
-    <node name="orb_slam2_mono" pkg="orb_slam2_ros" type="mono" output="screen">
-      <param name="voc_file" value="$(arg voc_file)" />
-      <param name="settings_file" value="$(arg settings_file)" />
-      
-      <remap from="/camera/image_raw" to="$(arg rgb_topic)" />
-    </node>
-  </group>
+  <!-- ORB-SLAM3 SLAM Node -->
+  <node name="slam_node" pkg="sd_thesis" type="slam_node.py" output="screen">
+    <param name="vocab_file" value="$(arg voc_file)" />
+    <param name="settings_file" value="$(arg settings_file)" />
+    <param name="camera_type" value="$(arg camera_type)" />
+    
+    <remap from="/camera/color/image_raw" to="$(arg rgb_topic)" />
+    <remap from="/camera/depth/image_rect_raw" to="$(arg depth_topic)" />
+    <remap from="/camera/color/camera_info" to="$(arg camera_info_topic)" />
+  </node>
   
   <!-- SLAM Test Node -->
   <node name="slam_test" pkg="sd_thesis" type="test_slam.py" output="screen">

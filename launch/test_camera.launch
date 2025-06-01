@@ -23,24 +23,6 @@
       <param name="enable_pointcloud" value="$(arg enable_pointcloud)" />
     </node>
   </group>
-      
-      <arg name="color_width" value="$(arg color_width)" />
-      <arg name="color_height" value="$(arg color_height)" />
-      <arg name="enable_color" value="$(arg enable_color)" />
-      
-      <arg name="infra_width" value="$(arg infra_width)" />
-      <arg name="infra_height" value="$(arg infra_height)" />
-      <arg name="enable_infra1" value="$(arg enable_infra1)" />
-      <arg name="enable_infra2" value="$(arg enable_infra2)" />
-      
-      <arg name="depth_fps" value="$(arg depth_fps)" />
-      <arg name="color_fps" value="$(arg color_fps)" />
-      
-      <arg name="enable_sync" value="$(arg enable_sync)" />
-      <arg name="pointcloud_texture_stream" value="$(arg pointcloud_texture_stream)" />
-      <arg name="pointcloud_texture_index" value="$(arg pointcloud_texture_index)" />
-    </include>
-  </group>
   
   <!-- Camera Test Node -->
   <node name="camera_test" pkg="sd_thesis" type="test_camera.py" output="screen">

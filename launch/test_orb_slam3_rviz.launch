@@ -1,0 +1,32 @@
+<?xml version="1.0"?>
+<launch>
+  <!-- Test ORB-SLAM3 with RViz visualization using mock data -->
+  
+  <!-- Parameters -->
+  <arg name="rviz" default="true" />
+  
+  <!-- ORB-SLAM3 Node (Python with mock data) -->
+  <node name="orb_slam3_node" pkg="sd_thesis" type="orb_slam3_node.py" output="screen">
+    <param name="vocabulary_path" value="/opt/ORB_SLAM3/Vocabulary/ORBvoc.txt" />
+    <param name="config_path" value="$(find sd_thesis)/config/orbslam3_realsense.yaml" />
+    <param name="orb_slam3_path" value="/opt/ORB_SLAM3" />
+  </node>
+  
+  <!-- Publish mock camera data -->
+  <node name="camera_publisher" pkg="sd_thesis" type="camera_node.py" output="screen">
+    <param name="mock_mode" value="true" />
+    <param name="fps" value="30" />
+  </node>
+  
+  <!-- TF Static Transforms -->
+  <node pkg="tf2_ros" type="static_transform_publisher" name="map_to_odom" 
+        args="0 0 0 0 0 0 map odom" />
+  
+  <!-- RViz Visualization -->
+  <group if="$(arg rviz)">
+    <node name="rviz" pkg="rviz" type="rviz" 
+          args="-d $(find sd_thesis)/config/orb_slam3_visualization.rviz" 
+          output="screen" />
+  </group>
+  
+</launch>

@@ -296,41 +296,26 @@ install_opencv() {
     log "OpenCV installation completed"
 }
 
-# Download and compile ORB-SLAM2
-install_orb_slam2() {
-    log "Installing ORB-SLAM2..."
+# Download and compile ORB-SLAM3
+install_orbslam3() {
+    log "Installing ORB-SLAM3..."
     
-    cd /tmp
-    if [[ ! -d "ORB_SLAM2" ]]; then
-        git clone https://github.com/raulmur/ORB_SLAM2.git
+    # Check if already installed
+    if [[ -d "/opt/ORB_SLAM3" ]] && [[ -f "/opt/ORB_SLAM3/lib/libORB_SLAM3.so" ]]; then
+        log "ORB-SLAM3 already installed, skipping..."
+        return
     fi
-    cd ORB_SLAM2
     
-    # Build DBoW2
-    cd Thirdparty/DBoW2
-    mkdir -p build
-    cd build
-    cmake .. -DCMAKE_BUILD_TYPE=Release
-    make -j$(nproc)
+    # Use our dedicated installation script
+    if [[ -f "scripts/install_orbslam3.sh" ]]; then
+        log "Running ORB-SLAM3 installation script..."
+        chmod +x scripts/install_orbslam3.sh
+        ./scripts/install_orbslam3.sh
+    else
+        error "ORB-SLAM3 installation script not found"
+    fi
     
-    # Build g2o
-    cd ../../g2o
-    mkdir -p build
-    cd build
-    cmake .. -DCMAKE_BUILD_TYPE=Release
-    make -j$(nproc)
-    
-    # Build ORB-SLAM2
-    cd ../../..
-    chmod +x build.sh
-    ./build.sh
-    
-    # Build ROS node
-    export ROS_PACKAGE_PATH=${ROS_PACKAGE_PATH}:$(pwd)/Examples/ROS
-    chmod +x build_ros.sh
-    ./build_ros.sh
-    
-    log "ORB-SLAM2 installation completed"
+    log "ORB-SLAM3 installation completed"
 }
 
 # Download YOLO v4 weights and config
@@ -464,7 +449,7 @@ main() {
     install_python_deps
     install_pangolin
     install_opencv
-    install_orb_slam2
+    install_orbslam3
     setup_yolo
     setup_workspace
     verify_installation

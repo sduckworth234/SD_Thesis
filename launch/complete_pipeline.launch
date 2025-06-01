@@ -57,11 +57,11 @@
       <param name="nms_threshold" value="0.4" />
     </node>
   </group>
-    <!-- ORB-SLAM2 Node -->
+    <!-- ORB-SLAM3 Node -->
   <group if="$(arg enable_slam)" ns="$(arg namespace)">
     <node name="slam_node" pkg="sd_thesis" type="slam_node.py" output="screen">
-      <param name="vocab_path" value="$(find sd_thesis)/models/orb_slam2/ORBvoc.txt" />
-      <param name="settings_path" value="$(find sd_thesis)/config/orbslam2_config.yaml" />
+      <param name="vocab_path" value="$(find sd_thesis)/models/orbslam3/ORBvoc.txt" />
+      <param name="settings_path" value="$(find sd_thesis)/config/orbslam3_realsense.yaml" />
       
       <!-- Use enhanced image if enhancement is enabled, otherwise raw -->
       <param name="color_topic" value="/$(arg namespace)/enhanced/image_raw" if="$(arg enable_enhancement)" />

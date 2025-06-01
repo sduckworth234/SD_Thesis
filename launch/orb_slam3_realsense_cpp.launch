@@ -1,0 +1,60 @@
+<!-- ORB-SLAM3 C++ Node with RealSense D435i and RViz Visualization -->
+<launch>
+  <!-- Parameters -->
+  <arg name="camera_namespace" default="camera" />
+  <arg name="enable_pointcloud" default="false" />
+  <arg name="rviz" default="true" />
+  <arg name="use_cpp_node" default="true" />
+  
+  <!-- RealSense Camera Launch -->
+  <group ns="$(arg camera_namespace)">
+    <include file="$(find realsense2_camera)/launch/rs_camera.launch">
+      <arg name="align_depth" value="true"/>
+      <arg name="enable_color" value="true"/>
+      <arg name="enable_depth" value="true"/>
+      <arg name="color_width" value="640"/>
+      <arg name="color_height" value="480"/>
+      <arg name="depth_width" value="640"/>
+      <arg name="depth_height" value="480"/>
+      <arg name="color_fps" value="30"/>
+      <arg name="depth_fps" value="30"/>
+      <arg name="enable_pointcloud" value="$(arg enable_pointcloud)"/>
+    </include>
+  </group>
+
+  <!-- ORB-SLAM3 C++ Node -->
+  <group if="$(arg use_cpp_node)">
+    <node name="orb_slam3_node" pkg="sd_thesis" type="orb_slam3_node" output="screen">
+      <param name="vocabulary_path" value="/opt/ORB_SLAM3/Vocabulary/ORBvoc.txt" />
+      <param name="config_path" value="$(find sd_thesis)/config/orbslam3_realsense.yaml" />
+      <remap from="/camera/color/image_raw" to="/$(arg camera_namespace)/color/image_raw"/>
+      <remap from="/camera/depth/image_rect_raw" to="/$(arg camera_namespace)/aligned_depth_to_color/image_raw"/>
+    </node>
+  </group>
+
+  <!-- ORB-SLAM3 Python Node (alternative) -->
+  <group unless="$(arg use_cpp_node)">
+    <node name="orb_slam3_node" pkg="sd_thesis" type="orb_slam3_node.py" output="screen">
+      <param name="vocabulary_path" value="/opt/ORB_SLAM3/Vocabulary/ORBvoc.txt" />
+      <param name="config_path" value="$(find sd_thesis)/config/orbslam3_realsense.yaml" />
+      <param name="orb_slam3_path" value="/opt/ORB_SLAM3" />
+      <remap from="/camera/color/image_raw" to="/$(arg camera_namespace)/color/image_raw"/>
+      <remap from="/camera/depth/image_rect_raw" to="/$(arg camera_namespace)/aligned_depth_to_color/image_raw"/>
+    </node>
+  </group>
+  
+  <!-- TF Static Transforms -->
+  <node pkg="tf2_ros" type="static_transform_publisher" name="map_to_odom" 
+        args="0 0 0 0 0 0 map odom" />
+  
+  <node pkg="tf2_ros" type="static_transform_publisher" name="odom_to_base_link" 
+        args="0 0 0 0 0 0 odom base_link" />
+
+  <!-- RViz Visualization -->
+  <group if="$(arg rviz)">
+    <node name="rviz" pkg="rviz" type="rviz" 
+          args="-d $(find sd_thesis)/config/orb_slam3_visualization.rviz" 
+          output="screen" />
+  </group>
+  
+</launch>
